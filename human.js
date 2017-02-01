@@ -7,9 +7,9 @@ function rad(x) {return x*Math.PI/180;}
 function sin(x) {return Math.sin(rad(x));}
 function cos(x) {return Math.cos(rad(x));}
 
-// цветове и вградени текстури за глава и крайници
-var feminine = true; //женствена фигура
-var colors = ['cornsilk','black','lightskyblue','royalblue','lightskyblue','lightskyblue','firebrick']; // [глава,обувка,таз,сферички,крайник,торс,]
+// цветове и вградени текстури за glava и крайници
+var feminine = true; //jenstvenа фигура
+var colors = ['cornsilk','black','lightskyblue','royalblue','lightskyblue','lightskyblue','firebrick']; // [glava,Obuvka,Taz,сферички,Krajnik,Tors,]
 var headScale = 1.0;
 var texHead = new THREE.TextureLoader().load("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABABAMAAABYR2ztAAAAGFBMVEX////Ly8v5+fne3t5GRkby8vK4uLi/v7/GbmKXAAAAZklEQVRIx2MYQUAQHQgQVkBtwEjICkbK3MAkQFABpj+R5ZkJKTAxImCFSSkhBamYVgiQrAADEHQkIW+iqiBCAfXjAkMHpgKqgyHgBiwBRfu4ECScYEZGvkD1JxEKhkA5OVTqi8EOAOyFJCGMDsu4AAAAAElFTkSuQmCC");
 var texLimb = new THREE.TextureLoader().load("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAQMAAACQp+OdAAAABlBMVEX////Ly8vsgL9iAAAAHElEQVQoz2OgEPyHAjgDjxoKGWTaRRkYDR/8AAAU9d8hJ6+ZxgAAAABJRU5ErkJggg==");
@@ -41,11 +41,18 @@ function parametricImage(tex,col,func)
 	));
 	return image;
 }
-
-// форма на глава като параметрична повърхнина
-function формаГлава(params)
+function cyl(r1,r2,h)
 {
-	return parametricImage(texHead,colors[0],function (u,v)
+	var geometry = new THREE.CylinderGeometry( r1, r2, h, 32 );
+	var material = new THREE.MeshPhongMaterial({color:"black",shininess:100})
+	var cylinder = new THREE.Mesh( geometry, material );
+	return cylinder;
+}
+
+// forma на glava като параметрична повърхнина
+function formaglava(params)
+{
+	var glav = parametricImage(texHead,colors[0],function (u,v)
 	{
 		var r = cossers(u,v,[[0.4,0.9,0,1,-3],[0,1,0,0.1,3],[0,1,0.9,1,3],[1.00,1.05,0.55,0.85,-5],[1.00,1.05,0.15,0.45,-5],[0.9,0.94,0.25,0.75,-5],[0.0,0.7,0.05,0.95,3],[-0.2,0.2,-0.15,1.15,-4],[-0.3,0.3,0.15,0.85,3]]);
 		u = 360*u;
@@ -56,10 +63,17 @@ function формаГлава(params)
 			headScale*r*params[2]*sin(u)*cos(v),
 			headScale*(r+k)*params[3]*sin(v));
 	});
+	var cyl1 = cyl(3,3,10);
+	var cyl2 = cyl(5,5,0.6);
+	cyl1.position.y+=5;
+	cyl2.position.y+=3.3;
+	glav.add(cyl1);
+	glav.add(cyl2);
+	return glav;
 }
 
-// форма на обувка като параметрична повърхнина
-function формаОбувка(params)
+// forma на Obuvka като параметрична повърхнина
+function formaObuvka(params)
 {
 	var image = new THREE.Object3D();
 	image.add(parametricImage(texLimb,colors[1],function (u,v)
@@ -89,8 +103,8 @@ function формаОбувка(params)
 	return image;
 }
 
-// форма на таз като параметрична повърхнина
-function формаТаз(params)
+// forma на Taz като параметрична повърхнина
+function formaTaz(params)
 {
 	return parametricImage(texLimb,params[0],function (u,v)
 	{
@@ -104,7 +118,7 @@ function формаТаз(params)
 	});
 }
 
-// добавя сферична става към образ
+// добавя сферична stava към образ
 function addSphere(image,r,y,j_color)
 {
 	var i = new THREE.Mesh(
@@ -115,8 +129,8 @@ function addSphere(image,r,y,j_color)
 	image.add(i);
 }
 	
-// форма на крайник като параметрична повърхнина
-function формаКрайник(params)
+// forma на Krajnik като параметрична повърхнина
+function formaKrajnik(params)
 {
 	var x=params[1], y=params[2], z=params[3], alpha=params[4], dAlpha=params[5], offset=params[6], scale=params[7], rad=params[8];
 
@@ -138,8 +152,8 @@ function формаКрайник(params)
 	return image;
 }
 
-// форма на торс като параметрична повърхнина
-function формаТорс(params)
+// forma на Tors като параметрична повърхнина
+function formaTors(params)
 {
 	var x=params[1], y=params[2], z=params[3], alpha=params[4], dAlpha=params[5], offset=params[6], scale=params[7];
 	var part_color=params[0];
@@ -166,8 +180,8 @@ function формаТорс(params)
 	return image;
 }
 
-// дефиниция на подвижна става с възможност за подстави
-function става(parent,pos,rot,params,shape,centered)
+// дефиниция на подвижна stava с възможност за подстави
+function stava(parent,pos,rot,params,shape,centered)
 {
 	var y = params[2];
 	var joint = new THREE.Object3D();
@@ -181,25 +195,25 @@ function става(parent,pos,rot,params,shape,centered)
 	joint.y=y;
 	
 	if (parent)
-	{	// закачане на ставата към родителската става
+	{	// закачане на stavaта към родителската stava
 		joint.position.set(0,parent.y,0);
 		parent.children[0].add(joint);
 	}
 	
-	joint.врът = function(x,y,z)
-	{	// "публичен" метод за въртене на става
+	joint.vryt = function(x,y,z)
+	{	// "публичен" метод за въртене на stava
 		this.children[0].rotation.set(rad(x),rad(y),rad(z));
 	}
 	
 	if (rot)
-	{	// първоначално завъртане на ставата
+	{	// първоначално завъртане на stavaта
 		joint.rotateX(rad(rot[0]));
 		joint.rotateZ(rad(rot[2]));
 		joint.rotateY(rad(rot[1]));
 	}
 	
 	if (pos)
-	{	// първоначално разположение на ставата
+	{	// първоначално разположение на stavaта
 		joint.position.set(pos[0],pos[1],pos[2]);
 	}
 	
@@ -207,32 +221,32 @@ function става(parent,pos,rot,params,shape,centered)
 }
 
 // дефиниция на човече
-function човек()
+function chovek()
 {
-	var obj = става(null,null,null,["blue",1,1,1],null,true);
+	var obj = stava(null,null,null,["blue",1,1,1],null,true);
 	
-	obj.таз = става(obj,null,[0,0,-20],[colors[6],3,4,feminine?5.5:5],формаТаз,true);
-		obj.тяло = става(obj.таз,[-2,4,0],[0,0,20],["blue",5,17,10,feminine?10:80,feminine?520:380,feminine?0.8:0.9,feminine?0.25:0.2],формаТорс);
-		obj.врат = става(obj.тяло,[0,15,0],[0,0,10],[colors[0],2,feminine?5:4,2,45,60,1,0.2,0],формаКрайник);
-		obj.глава = става(obj.врат,[1,3,0],null,[colors[0],3,4,2.5],формаГлава);
-	obj.л_крак = става(obj.таз,[0,-3,-4],[0,180,200],[colors[6],4,15,4,-70,220,1,0.3,2],формаКрайник);
-	//obj.л_крак.material.color=new THREE.Color("black");
-		obj.л_коляно = става(obj.л_крак,null,null,[colors[6],4,14,4,-40,290,0.65,0.15,1.5],формаКрайник);
-		obj.л_глезен = става(obj.л_коляно,null,[0,0,-90],[colors[6],1,4,2],формаОбувка);
-	obj.д_крак = става(obj.таз,[0,-3,4],[0,180,200],[colors[6],4,15,4,-70,220,1,0.3,2],формаКрайник);
-		obj.д_коляно = става(obj.д_крак,null,null,[colors[6],4,14,4,-40,290,0.65,0.15,1.5],формаКрайник);
-		obj.д_глезен = става(obj.д_коляно,null,[0,0,-90],["blue",1,4,2],формаОбувка);
-	obj.л_ръка = става(obj.тяло,[0,14,feminine?-5:-6],[10,-180,180],["blue",3.5,11,2.5,-90,360,0.9,0.2,1.5],формаКрайник);
-		obj.л_лакът = става(obj.л_ръка,null,null,[colors[0],2.5,9,2,-40,150,0.5,0.45,1.1],формаКрайник);
-		obj.л_китка = става(obj.л_лакът,null,null,[colors[0],1.5,6,3.5,-100,230,0.5,0.3,1/2],формаКрайник);
-	obj.д_ръка = става(obj.тяло,[0,14,feminine?5:6],[-10,180,-180],["blue",3.5,11,2.5,-90,360,0.9,0.2,1.5],формаКрайник);
-		obj.д_лакът = става(obj.д_ръка,null,null,[colors[0],2.5,9,2,-40,150,0.5,0.45,1.1],формаКрайник);
-		obj.д_китка = става(obj.д_лакът,null,null,[colors[0],1.5,6,3.5,-100,230,0.5,0.3,1/2],формаКрайник);
+	obj.Taz = stava(obj,null,[0,0,-20],[colors[6],3,4,feminine?5.5:5],formaTaz,true);
+		obj.tqlo = stava(obj.Taz,[-2,4,0],[0,0,20],["blue",5,17,10,feminine?10:80,feminine?520:380,feminine?0.8:0.9,feminine?0.25:0.2],formaTors);
+		obj.vrat = stava(obj.tqlo,[0,15,0],[0,0,10],[colors[0],2,feminine?5:4,2,45,60,1,0.2,0],formaKrajnik);
+		obj.glava = stava(obj.vrat,[1,3,0],null,[colors[0],3,4,2.5],formaglava);
+	obj.l_krak = stava(obj.Taz,[0,-3,-4],[0,180,200],[colors[6],4,15,4,-70,220,1,0.3,2],formaKrajnik);
+	//obj.l_krak.material.color=new THREE.Color("black");
+		obj.l_kolqno = stava(obj.l_krak,null,null,[colors[6],4,14,4,-40,290,0.65,0.15,1.5],formaKrajnik);
+		obj.l_glezen = stava(obj.l_kolqno,null,[0,0,-90],[colors[6],1,4,2],formaObuvka);
+	obj.d_krak = stava(obj.Taz,[0,-3,4],[0,180,200],[colors[6],4,15,4,-70,220,1,0.3,2],formaKrajnik);
+		obj.d_kolqno = stava(obj.d_krak,null,null,[colors[6],4,14,4,-40,290,0.65,0.15,1.5],formaKrajnik);
+		obj.d_glezen = stava(obj.d_kolqno,null,[0,0,-90],["blue",1,4,2],formaObuvka);
+	obj.l_hand = stava(obj.tqlo,[0,14,feminine?-5:-6],[10,-180,180],["blue",3.5,11,2.5,-90,360,0.9,0.2,1.5],formaKrajnik);
+		obj.l_lakyt = stava(obj.l_hand,null,null,[colors[0],2.5,9,2,-40,150,0.5,0.45,1.1],formaKrajnik);
+		obj.l_kitka = stava(obj.l_lakyt,null,null,[colors[0],1.5,6,3.5,-100,230,0.5,0.3,1/2],formaKrajnik);
+	obj.d_ryka = stava(obj.tqlo,[0,14,feminine?5:6],[-10,180,-180],["blue",3.5,11,2.5,-90,360,0.9,0.2,1.5],formaKrajnik);
+		obj.d_lakyt = stava(obj.d_ryka,null,null,[colors[0],2.5,9,2,-40,150,0.5,0.45,1.1],formaKrajnik);
+		obj.d_kitka = stava(obj.d_lakyt,null,null,[colors[0],1.5,6,3.5,-100,230,0.5,0.3,1/2],formaKrajnik);
 
 	scene.add(obj);
 	return obj;
 }
 
-// дефиниции на човечета с леко мъжествени или женствени черти
-function мъжествен() {feminine=false; return човек();} 
-function женствен() {feminine=true; return човек();} 
+// дефиниции на човечета с леко mujestvenи или jenstvenи черти
+function mujestven() {feminine=false; return chovek();} 
+function jenstven() {feminine=true; return chovek();} 

@@ -6,21 +6,25 @@
 	
 	<body id="demo">
 		<h1>"тренировка"<br><small></small></h1>
-		<input type="text" >
 		<script>
 		
 			// нагласяване на цвета и центрирането на текста с имената ви
 			document.getElementsByTagName('h1')[0].style = 'color:white; text-align:center; font-size:1.75em';
 			
-			var buildings =[];
-			var grass=[];
-			var road =[];
+			var world =[];
 			// рисувателно поле на цял екран
 			renderer = new THREE.WebGLRenderer({antialias:true});
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			document.body.appendChild( renderer.domElement );
 			renderer.domElement.style = 'width:100%; height:100%; position:fixed; top:0; left:0; z-index:-1;';
-			renderer.setClearColor('firebrick');
+			renderer.setClearColor('skyblue');
+			var building_textures = [];
+			building_textures.push(new THREE.TextureLoader().load( "building_texture1.jpg" ));
+			building_textures.push(new THREE.TextureLoader().load( "building_texture2.jpg" ));
+			building_textures.push(new THREE.TextureLoader().load( "building_texture3.jpg" ));
+			building_textures.push(new THREE.TextureLoader().load( "building_texture4.jpg" ));
+			var road_texture = new THREE.TextureLoader().load( "road.jpg" );
+			var grass_texture = new THREE.TextureLoader().load( "grass.jpg" );
 			// сцена и камера
 			scene = new THREE.Scene();
 			camera = new THREE.PerspectiveCamera( 30, window.innerWidth/window.innerHeight, 0.1, 8000 );
@@ -34,74 +38,84 @@
 			scene.fog = new THREE.FogExp2( 0xefd1b5, 0.00095 );
 
 
-			var texture = new THREE.TextureLoader().load( "road.jpg" );
-		
+			
+			var GEN_PERIOD = 160*4;
+			var WORLD_PART_LEN = 130;
+			var T_GEN=8;
 			
 			// функция за анимиране на сцената
 			var t = 0; // време
 
 			function generateBuilding(i)
 			{
-				if(i%3==0)
-				{
+
 					var mergedGeo = new THREE.Geometry();
 
 					var baseSize = 1;
-					var building_texture = new THREE.TextureLoader().load( "building_texture2.jpg" );
-					var material = new THREE.MeshPhongMaterial({map: building_texture});
+					var texture =building_textures[Math.floor(Math.random()*building_textures.length)];
+					var material = new THREE.MeshPhongMaterial({
+						map: texture});
 					var cubeGeo = new THREE.CubeGeometry( baseSize, baseSize, baseSize, 1, 1, 1, material);
 					var mesh = new THREE.Mesh( cubeGeo, material );
 
-					var sy = 1.5 + 0.5 * Math.random();
-					var sx = 5 + 10 * Math.random();
-					var sz = 10 + 10 * Math.random();
+					var sy = 0.5 + 0.5 * Math.random();
+					var sx = 15 + 10 * Math.random();
+					var sz = 15 + 10 * Math.random();
 
-					var x = ( Math.random() < 0.5 ? 1 : -1 ) * THREE.Math.randFloat( 200 + sx*10 / 2, 300 );
+					var x = ( (i/8)%2==0 ? 1 : -1 ) * THREE.Math.randFloat( 200 + sx*10 / 2, 300 );
 					sy *= 0.25 * Math.abs( x );
 					mesh.scale.set( sx*10, sy*10, sz*10 );
 
-					mesh.position.y = -48;
-					mesh.position.z =-i*130/4 +130;
+					mesh.position.y = 0;
+					mesh.position.z =-i *WORLD_PART_LEN/8;
 					mesh.position.x=x;
 
 					
 					mesh.castShadow = true;
 					mesh.receiveShadow = true;
-					scene.add(mesh);
-					var mesh2 = mesh.clone();
+					return mesh;
 
-				}
 			}
 
 			function genRoad(i)
 			{
 				var cube = new THREE.Mesh(
-					new THREE.BoxGeometry(180,1,130),
-					new THREE.MeshPhongMaterial({map: texture})
+					new THREE.BoxGeometry(180,1,WORLD_PART_LEN),
+					new THREE.MeshPhongMaterial({map: road_texture})
 				);
-				cube.position.set(-2,-46,-i*130);
-				scene.add( cube );
+				cube.position.set(-2,-46,-i*WORLD_PART_LEN/T_GEN);
+				return cube;
 			}
 			function genGrass(i)
 			{
-				var grass_texture = new THREE.TextureLoader().load( "grass.jpg" );
+				var grassObj = new THREE.Object3D();
+				
 				var cube1 = new THREE.Mesh(
-					new THREE.BoxGeometry(1080,1,130),
+					new THREE.BoxGeometry(1080,1,WORLD_PART_LEN),
 					new THREE.MeshPhongMaterial({map: grass_texture})
 				);
-				cube1.position.set(-530,-48,-i*130);
-				scene.add( cube1 );
+				cube1.position.set(-530,-48,-i*WORLD_PART_LEN/T_GEN);
+				grassObj.add( cube1 );
 				var cube2 = cube1.clone();
-				cube2.position.set(530,-48,-i*130);
-				scene.add( cube2 );
-				grass.push([cube1,cube2]);
+				cube2.position.set(530,-48,-i*WORLD_PART_LEN/T_GEN);
+				grassObj.add( cube2 );
+				return grassObj;
 			}
-			// for(var i=0;i<115;i++)
-			// {
-			// 	genRoad(i);
-			// 	genGrass(i);
-			// 	generateBuilding(i);
-			// }
+
+			function createWorldPart(i)
+			{
+				var worldPart = new THREE.Object3D();
+				worldPart.add(genRoad(i));
+				worldPart.add(genGrass(i));
+				worldPart.add(generateBuilding(i));
+				world.push(worldPart);
+				scene.add(worldPart);
+			}
+
+			for(var i=T_GEN;i<GEN_PERIOD;i+=T_GEN)
+			{
+				 createWorldPart(i);
+			}
 
 			function drawFrame()
 			{
@@ -113,50 +127,53 @@
 
 			function run(t)
 			{
-				манекен_м.таз.врът(0,0,10*sin(12*t)-20);
-				манекен_м.д_ръка.врът(0,0,15*sin(5*(t+50))+10);
-				манекен_м.л_ръка.врът(0,0,15*sin(5*t)+10);
-				манекен_м.д_лакът.врът(0,0,30*sin(5*t)-95);
-				манекен_м.л_лакът.врът(0,0,30*sin(5*t)-95);
+				maneken.Taz.vryt(0,0,10*sin(12*t)-20);
+				maneken.d_ryka.vryt(0,0,15*sin(5*(t+50))+10);
+				maneken.l_hand.vryt(0,0,15*sin(5*t)+10);
+				maneken.d_lakyt.vryt(0,0,30*sin(5*(t+35))-95);
+				maneken.l_lakyt.vryt(0,0,30*sin(5*t)-95);
 
-				манекен_м.л_крак.врът(0,0,65*sin((t+35)*6)-30);				
-				манекен_м.д_крак.врът(0,0,65*sin(6*t)-30);
-				манекен_м.л_коляно.врът(0,0,35*sin((t+50)*6)+60);				
-				манекен_м.д_коляно.врът(0,0,35*sin(6*t)+60);
+				maneken.l_krak.vryt(0,0,65*sin((t+35)*6)-30);				
+				maneken.d_krak.vryt(0,0,65*sin(6*t)-30);
+				maneken.l_kolqno.vryt(0,0,35*sin((t+50)*6)+60);				
+				maneken.d_kolqno.vryt(0,0,35*sin(6*t)+60);
 
-				манекен_м.position.set(0,-18.5,-50);
+				maneken.position.set(0,-18.5,-50);
 
 			}
 
 
-			манекен_м = мъжествен();
-			манекен_м.rotation.set(0,rad(90),0);
+			maneken = mujestven();
+			maneken.rotation.set(0,rad(90),0);
 
-			манекен_м.л_ръка.врът(10,10,-35);
-			манекен_м.д_ръка.врът(-10,-10,-35);
-			манекен_м.таз.врът(0,0,20);
-			// тук се описват статичните елементи на позата
+			maneken.l_hand.vryt(10,10,-35);
+			maneken.d_ryka.vryt(-10,-10,-35);
+			maneken.Taz.vryt(0,0,20);
 
 		
 		
-			
+			var zpos=0;
 			//count 
 			animate = function (t)
 			{
-				// тук се описват динамичните елементи на позата
-				// като променливата t е номер на кадър, като се
-				// очаква 1 секунда да е приблизително 60 кадъра
-				//t--;
-				document.getElementById("demo").onkeypress = function() { 
-					};
-				run(t);
-				
-				genRoad(t);
-				genGrass(t);
-				//generateBuilding(t);
-				
-				манекен_м.position.z-=100;
+;
 
+				run(t);
+				if(t%T_GEN==0)
+				{
+					 createWorldPart(t+GEN_PERIOD);
+				}
+				
+				zpos+=WORLD_PART_LEN/T_GEN;
+				maneken.position.z=-zpos-190;
+				camera.position.z=-zpos+10;
+
+				
+				if(t%T_GEN==0)
+				{
+					scene.remove(world.shift());
+				}
+					
 			}
 
 			drawFrame();
